@@ -1,0 +1,1453 @@
+{
+	"info": {
+		"name": "CashPlusAssist API",
+		"description": "Coleção de testes para a API CashPlusAssist",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Sessão",
+			"item": [
+				{
+					"name": "Criar Sessão - Sucesso",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/sessao/criar?userId=operador123",
+							"host": ["{{baseUrl}}"],
+							"path": ["sessao", "criar"],
+							"query": [
+								{
+									"key": "userId",
+									"value": "operador123"
+								}
+							]
+						},
+						"description": "Cria uma nova sessão e retorna um token"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.token) {",
+									"        pm.collectionVariables.set('sessionToken', jsonData.token);",
+									"        console.log('Token salvo: ' + jsonData.token);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"response": [
+						{
+							"name": "Sucesso",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/sessao/criar?userId=operador123",
+									"host": ["{{baseUrl}}"],
+									"path": ["sessao", "criar"],
+									"query": [
+										{
+											"key": "userId",
+											"value": "operador123"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"body": "{\n    \"token\": \"abc123def456\",\n    \"message\": \"Sessão criada com sucesso\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Criar Sessão - Sem userId (usa default)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/sessao/criar",
+							"host": ["{{baseUrl}}"],
+							"path": ["sessao", "criar"]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.token) {",
+									"        pm.collectionVariables.set('sessionToken', jsonData.token);",
+									"        console.log('Token salvo: ' + jsonData.token);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					]
+				},
+				{
+					"name": "Validar Sessão - Sucesso",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-Session-Token",
+								"value": "{{sessionToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/sessao/validar",
+							"host": ["{{baseUrl}}"],
+							"path": ["sessao", "validar"]
+						}
+					},
+					"response": [
+						{
+							"name": "Sessão Válida",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Session-Token",
+										"value": "abc123def456"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/sessao/validar",
+									"host": ["{{baseUrl}}"],
+									"path": ["sessao", "validar"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"status\": \"valid\",\n    \"message\": \"Sessão válida\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Validar Sessão - Token Inválido",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-Session-Token",
+								"value": "token-invalido-123",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/sessao/validar",
+							"host": ["{{baseUrl}}"],
+							"path": ["sessao", "validar"]
+						}
+					},
+					"response": [
+						{
+							"name": "Sessão Inválida",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Session-Token",
+										"value": "token-invalido-123"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/sessao/validar",
+									"host": ["{{baseUrl}}"],
+									"path": ["sessao", "validar"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"status\": \"invalid\",\n    \"message\": \"Sessão inválida ou expirada\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Validar Sessão - Sem Token (Erro)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/sessao/validar",
+							"host": ["{{baseUrl}}"],
+							"path": ["sessao", "validar"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Operadores",
+			"item": [
+				{
+					"name": "Criar Operador - Sucesso",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Session-Token",
+								"value": "{{sessionToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nome\": \"João Silva\",\n    \"cpf\": \"12345678909\",\n    \"turno\": \"MANHA\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/operadores",
+							"host": ["{{baseUrl}}"],
+							"path": ["operadores"]
+						}
+					},
+					"response": [
+						{
+							"name": "Operador Criado",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"nome\": \"João Silva\",\n    \"cpf\": \"12345678909\",\n    \"turno\": \"MANHA\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/operadores",
+									"host": ["{{baseUrl}}"],
+									"path": ["operadores"]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"id\": 1,\n    \"nome\": \"João Silva\",\n    \"cpf\": \"12345678909\",\n    \"turno\": \"MANHA\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Criar Operador - CPF Inválido",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Session-Token",
+								"value": "{{sessionToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nome\": \"Maria Santos\",\n    \"cpf\": \"12345678900\",\n    \"turno\": \"TARDE\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/operadores",
+							"host": ["{{baseUrl}}"],
+							"path": ["operadores"]
+						}
+					},
+					"response": [
+						{
+							"name": "Erro - CPF Inválido",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"nome\": \"Maria Santos\",\n    \"cpf\": \"12345678900\",\n    \"turno\": \"TARDE\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/operadores",
+									"host": ["{{baseUrl}}"],
+									"path": ["operadores"]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"timestamp\": \"2025-11-14T18:30:00\",\n    \"status\": 400,\n    \"error\": \"Bad Request\",\n    \"message\": \"CPF inválido\",\n    \"path\": \"/operadores\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Criar Operador - Nome Muito Curto",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Session-Token",
+								"value": "{{sessionToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nome\": \"AB\",\n    \"cpf\": \"98765432100\",\n    \"turno\": \"NOITE\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/operadores",
+							"host": ["{{baseUrl}}"],
+							"path": ["operadores"]
+						}
+					},
+					"response": [
+						{
+							"name": "Erro - Nome Muito Curto",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"nome\": \"AB\",\n    \"cpf\": \"98765432100\",\n    \"turno\": \"NOITE\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/operadores",
+									"host": ["{{baseUrl}}"],
+									"path": ["operadores"]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"timestamp\": \"2025-11-14T18:30:00\",\n    \"status\": 400,\n    \"error\": \"Bad Request\",\n    \"message\": \"Nome deve ter no mínimo 3 caracteres\",\n    \"path\": \"/operadores\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Criar Operador - Turno Inválido",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Session-Token",
+								"value": "{{sessionToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nome\": \"Pedro Costa\",\n    \"cpf\": \"11122233344\",\n    \"turno\": \"MADRUGADA\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/operadores",
+							"host": ["{{baseUrl}}"],
+							"path": ["operadores"]
+						}
+					},
+					"response": [
+						{
+							"name": "Erro - Turno Inválido",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"nome\": \"Pedro Costa\",\n    \"cpf\": \"11122233344\",\n    \"turno\": \"MADRUGADA\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/operadores",
+									"host": ["{{baseUrl}}"],
+									"path": ["operadores"]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"timestamp\": \"2025-11-14T18:30:00\",\n    \"status\": 400,\n    \"error\": \"Bad Request\",\n    \"message\": \"Turno deve ser MANHA, TARDE ou NOITE\",\n    \"path\": \"/operadores\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Criar Operador - Campos Obrigatórios Faltando",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Session-Token",
+								"value": "{{sessionToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nome\": \"Ana\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/operadores",
+							"host": ["{{baseUrl}}"],
+							"path": ["operadores"]
+						}
+					},
+					"response": [
+						{
+							"name": "Erro - Campos Obrigatórios",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"nome\": \"Ana\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/operadores",
+									"host": ["{{baseUrl}}"],
+									"path": ["operadores"]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"timestamp\": \"2025-11-14T18:30:00\",\n    \"status\": 400,\n    \"error\": \"Bad Request\",\n    \"message\": \"CPF é obrigatório\",\n    \"path\": \"/operadores\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Listar Todos Operadores",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Session-Token",
+								"value": "{{sessionToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/operadores",
+							"host": ["{{baseUrl}}"],
+							"path": ["operadores"]
+						}
+					},
+					"response": [
+						{
+							"name": "Lista de Operadores",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/operadores",
+									"host": ["{{baseUrl}}"],
+									"path": ["operadores"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"body": "[\n    {\n        \"id\": 1,\n        \"nome\": \"João Silva\",\n        \"cpf\": \"12345678909\",\n        \"turno\": \"MANHA\"\n    },\n    {\n        \"id\": 2,\n        \"nome\": \"Maria Santos\",\n        \"cpf\": \"98765432100\",\n        \"turno\": \"TARDE\"\n    }\n]"
+						}
+					]
+				},
+				{
+					"name": "Buscar Operador por ID - Sucesso",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Session-Token",
+								"value": "{{sessionToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/operadores/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["operadores", "1"]
+						}
+					},
+					"response": [
+						{
+							"name": "Operador Encontrado",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/operadores/1",
+									"host": ["{{baseUrl}}"],
+									"path": ["operadores", "1"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"id\": 1,\n    \"nome\": \"João Silva\",\n    \"cpf\": \"12345678909\",\n    \"turno\": \"MANHA\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Buscar Operador por ID - Não Encontrado",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Session-Token",
+								"value": "{{sessionToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/operadores/999",
+							"host": ["{{baseUrl}}"],
+							"path": ["operadores", "999"]
+						}
+					},
+					"response": [
+						{
+							"name": "Erro - Não Encontrado",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/operadores/999",
+									"host": ["{{baseUrl}}"],
+									"path": ["operadores", "999"]
+								}
+							},
+							"status": "Not Found",
+							"code": 404,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"timestamp\": \"2025-11-14T18:30:00\",\n    \"status\": 404,\n    \"error\": \"Not Found\",\n    \"message\": \"Operador não encontrado com ID: 999\",\n    \"path\": \"/operadores/999\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Atualizar Operador - Sucesso",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Session-Token",
+								"value": "{{sessionToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nome\": \"João Silva Santos\",\n    \"cpf\": \"12345678909\",\n    \"turno\": \"TARDE\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/operadores/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["operadores", "1"]
+						}
+					},
+					"response": [
+						{
+							"name": "Operador Atualizado",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"nome\": \"João Silva Santos\",\n    \"cpf\": \"12345678909\",\n    \"turno\": \"TARDE\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/operadores/1",
+									"host": ["{{baseUrl}}"],
+									"path": ["operadores", "1"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"id\": 1,\n    \"nome\": \"João Silva Santos\",\n    \"cpf\": \"12345678909\",\n    \"turno\": \"TARDE\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Atualizar Operador - Não Encontrado",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Session-Token",
+								"value": "{{sessionToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nome\": \"Teste\",\n    \"cpf\": \"11122233344\",\n    \"turno\": \"MANHA\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/operadores/999",
+							"host": ["{{baseUrl}}"],
+							"path": ["operadores", "999"]
+						}
+					},
+					"response": [
+						{
+							"name": "Erro - Não Encontrado",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"nome\": \"Teste\",\n    \"cpf\": \"11122233344\",\n    \"turno\": \"MANHA\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/operadores/999",
+									"host": ["{{baseUrl}}"],
+									"path": ["operadores", "999"]
+								}
+							},
+							"status": "Not Found",
+							"code": 404,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"timestamp\": \"2025-11-14T18:30:00\",\n    \"status\": 404,\n    \"error\": \"Not Found\",\n    \"message\": \"Operador não encontrado com ID: 999\",\n    \"path\": \"/operadores/999\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Deletar Operador - Sucesso",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "X-Session-Token",
+								"value": "{{sessionToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/operadores/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["operadores", "1"]
+						}
+					},
+					"response": [
+						{
+							"name": "Operador Deletado",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/operadores/1",
+									"host": ["{{baseUrl}}"],
+									"path": ["operadores", "1"]
+								}
+							},
+							"status": "No Content",
+							"code": 204,
+							"_postman_previewlanguage": "json"
+						}
+					]
+				},
+				{
+					"name": "Deletar Operador - Não Encontrado",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "X-Session-Token",
+								"value": "{{sessionToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/operadores/999",
+							"host": ["{{baseUrl}}"],
+							"path": ["operadores", "999"]
+						}
+					},
+					"response": [
+						{
+							"name": "Erro - Não Encontrado",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/operadores/999",
+									"host": ["{{baseUrl}}"],
+									"path": ["operadores", "999"]
+								}
+							},
+							"status": "Not Found",
+							"code": 404,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"timestamp\": \"2025-11-14T18:30:00\",\n    \"status\": 404,\n    \"error\": \"Not Found\",\n    \"message\": \"Operador não encontrado com ID: 999\",\n    \"path\": \"/operadores/999\"\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Transações",
+			"item": [
+				{
+					"name": "Criar Transação - Sucesso (DINHEIRO)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Session-Token",
+								"value": "{{sessionToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"valor\": 50.00,\n    \"tipoPagamento\": \"DINHEIRO\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/transacoes",
+							"host": ["{{baseUrl}}"],
+							"path": ["transacoes"]
+						}
+					},
+					"response": [
+						{
+							"name": "Transação Criada",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"valor\": 50.00,\n    \"tipoPagamento\": \"DINHEIRO\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/transacoes",
+									"host": ["{{baseUrl}}"],
+									"path": ["transacoes"]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"id\": 1,\n    \"valor\": 50.00,\n    \"tipoPagamento\": \"DINHEIRO\",\n    \"riscoFraude\": \"BAIXO\",\n    \"dataTransacao\": \"2025-11-14T18:30:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Criar Transação - Sucesso (PIX)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Session-Token",
+								"value": "{{sessionToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"valor\": 150.50,\n    \"tipoPagamento\": \"PIX\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/transacoes",
+							"host": ["{{baseUrl}}"],
+							"path": ["transacoes"]
+						}
+					}
+				},
+				{
+					"name": "Criar Transação - Sucesso (CARTAO - BAIXO)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Session-Token",
+								"value": "{{sessionToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"valor\": 75.00,\n    \"tipoPagamento\": \"CARTAO\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/transacoes",
+							"host": ["{{baseUrl}}"],
+							"path": ["transacoes"]
+						}
+					},
+					"response": [
+						{
+							"name": "Transação com Risco BAIXO",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"valor\": 75.00,\n    \"tipoPagamento\": \"CARTAO\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/transacoes",
+									"host": ["{{baseUrl}}"],
+									"path": ["transacoes"]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"id\": 2,\n    \"valor\": 75.00,\n    \"tipoPagamento\": \"CARTAO\",\n    \"riscoFraude\": \"BAIXO\",\n    \"dataTransacao\": \"2025-11-14T18:30:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Criar Transação - Sucesso (CARTAO - MEDIO)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Session-Token",
+								"value": "{{sessionToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"valor\": 300.00,\n    \"tipoPagamento\": \"CARTAO\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/transacoes",
+							"host": ["{{baseUrl}}"],
+							"path": ["transacoes"]
+						}
+					},
+					"response": [
+						{
+							"name": "Transação com Risco MEDIO",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"valor\": 300.00,\n    \"tipoPagamento\": \"CARTAO\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/transacoes",
+									"host": ["{{baseUrl}}"],
+									"path": ["transacoes"]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"id\": 3,\n    \"valor\": 300.00,\n    \"tipoPagamento\": \"CARTAO\",\n    \"riscoFraude\": \"MEDIO\",\n    \"dataTransacao\": \"2025-11-14T18:30:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Criar Transação - Sucesso (CARTAO - ALTO)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Session-Token",
+								"value": "{{sessionToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"valor\": 750.00,\n    \"tipoPagamento\": \"CARTAO\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/transacoes",
+							"host": ["{{baseUrl}}"],
+							"path": ["transacoes"]
+						}
+					},
+					"response": [
+						{
+							"name": "Transação com Risco ALTO",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"valor\": 750.00,\n    \"tipoPagamento\": \"CARTAO\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/transacoes",
+									"host": ["{{baseUrl}}"],
+									"path": ["transacoes"]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"id\": 4,\n    \"valor\": 750.00,\n    \"tipoPagamento\": \"CARTAO\",\n    \"riscoFraude\": \"ALTO\",\n    \"dataTransacao\": \"2025-11-14T18:30:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Criar Transação - Valor Negativo",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Session-Token",
+								"value": "{{sessionToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"valor\": -50.00,\n    \"tipoPagamento\": \"DINHEIRO\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/transacoes",
+							"host": ["{{baseUrl}}"],
+							"path": ["transacoes"]
+						}
+					},
+					"response": [
+						{
+							"name": "Erro - Valor Negativo",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"valor\": -50.00,\n    \"tipoPagamento\": \"DINHEIRO\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/transacoes",
+									"host": ["{{baseUrl}}"],
+									"path": ["transacoes"]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"timestamp\": \"2025-11-14T18:30:00\",\n    \"status\": 400,\n    \"error\": \"Bad Request\",\n    \"message\": \"Valor deve ser positivo\",\n    \"path\": \"/transacoes\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Criar Transação - Valor Zero",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Session-Token",
+								"value": "{{sessionToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"valor\": 0.00,\n    \"tipoPagamento\": \"DINHEIRO\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/transacoes",
+							"host": ["{{baseUrl}}"],
+							"path": ["transacoes"]
+						}
+					},
+					"response": [
+						{
+							"name": "Erro - Valor Zero",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"valor\": 0.00,\n    \"tipoPagamento\": \"DINHEIRO\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/transacoes",
+									"host": ["{{baseUrl}}"],
+									"path": ["transacoes"]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"timestamp\": \"2025-11-14T18:30:00\",\n    \"status\": 400,\n    \"error\": \"Bad Request\",\n    \"message\": \"Valor deve ser positivo\",\n    \"path\": \"/transacoes\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Criar Transação - Valor Nulo",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"tipoPagamento\": \"DINHEIRO\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/transacoes",
+							"host": ["{{baseUrl}}"],
+							"path": ["transacoes"]
+						}
+					},
+					"response": [
+						{
+							"name": "Erro - Valor Nulo",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"tipoPagamento\": \"DINHEIRO\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/transacoes",
+									"host": ["{{baseUrl}}"],
+									"path": ["transacoes"]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"timestamp\": \"2025-11-14T18:30:00\",\n    \"status\": 400,\n    \"error\": \"Bad Request\",\n    \"message\": \"Valor é obrigatório\",\n    \"path\": \"/transacoes\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Criar Transação - Tipo Pagamento Inválido",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Session-Token",
+								"value": "{{sessionToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"valor\": 100.00,\n    \"tipoPagamento\": \"BITCOIN\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/transacoes",
+							"host": ["{{baseUrl}}"],
+							"path": ["transacoes"]
+						}
+					},
+					"response": [
+						{
+							"name": "Erro - Tipo Pagamento Inválido",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"valor\": 100.00,\n    \"tipoPagamento\": \"BITCOIN\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/transacoes",
+									"host": ["{{baseUrl}}"],
+									"path": ["transacoes"]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"timestamp\": \"2025-11-14T18:30:00\",\n    \"status\": 400,\n    \"error\": \"Bad Request\",\n    \"message\": \"Tipo de pagamento deve ser DINHEIRO, CARTAO ou PIX\",\n    \"path\": \"/transacoes\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Criar Transação - Tipo Pagamento Vazio",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-Session-Token",
+								"value": "{{sessionToken}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"valor\": 100.00,\n    \"tipoPagamento\": \"\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/transacoes",
+							"host": ["{{baseUrl}}"],
+							"path": ["transacoes"]
+						}
+					},
+					"response": [
+						{
+							"name": "Erro - Tipo Pagamento Vazio",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"valor\": 100.00,\n    \"tipoPagamento\": \"\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/transacoes",
+									"host": ["{{baseUrl}}"],
+									"path": ["transacoes"]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"timestamp\": \"2025-11-14T18:30:00\",\n    \"status\": 400,\n    \"error\": \"Bad Request\",\n    \"message\": \"Tipo de pagamento é obrigatório\",\n    \"path\": \"/transacoes\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Listar Todas Transações",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Session-Token",
+								"value": "{{sessionToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/transacoes",
+							"host": ["{{baseUrl}}"],
+							"path": ["transacoes"]
+						}
+					},
+					"response": [
+						{
+							"name": "Lista de Transações",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/transacoes",
+									"host": ["{{baseUrl}}"],
+									"path": ["transacoes"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"body": "[\n    {\n        \"id\": 1,\n        \"valor\": 50.00,\n        \"tipoPagamento\": \"DINHEIRO\",\n        \"riscoFraude\": \"BAIXO\",\n        \"dataTransacao\": \"2025-11-14T18:30:00\"\n    },\n    {\n        \"id\": 2,\n        \"valor\": 75.00,\n        \"tipoPagamento\": \"CARTAO\",\n        \"riscoFraude\": \"BAIXO\",\n        \"dataTransacao\": \"2025-11-14T18:30:01\"\n    },\n    {\n        \"id\": 3,\n        \"valor\": 300.00,\n        \"tipoPagamento\": \"CARTAO\",\n        \"riscoFraude\": \"MEDIO\",\n        \"dataTransacao\": \"2025-11-14T18:30:02\"\n    }\n]"
+						}
+					]
+				},
+				{
+					"name": "Buscar Transação por ID - Sucesso",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Session-Token",
+								"value": "{{sessionToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/transacoes/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["transacoes", "1"]
+						}
+					},
+					"response": [
+						{
+							"name": "Transação Encontrada",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/transacoes/1",
+									"host": ["{{baseUrl}}"],
+									"path": ["transacoes", "1"]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"id\": 1,\n    \"valor\": 50.00,\n    \"tipoPagamento\": \"DINHEIRO\",\n    \"riscoFraude\": \"BAIXO\",\n    \"dataTransacao\": \"2025-11-14T18:30:00\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Buscar Transação por ID - Não Encontrado",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Session-Token",
+								"value": "{{sessionToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/transacoes/999",
+							"host": ["{{baseUrl}}"],
+							"path": ["transacoes", "999"]
+						}
+					},
+					"response": [
+						{
+							"name": "Erro - Não Encontrado",
+							"originalRequest": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/transacoes/999",
+									"host": ["{{baseUrl}}"],
+									"path": ["transacoes", "999"]
+								}
+							},
+							"status": "Not Found",
+							"code": 404,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"timestamp\": \"2025-11-14T18:30:00\",\n    \"status\": 404,\n    \"error\": \"Not Found\",\n    \"message\": \"Transação não encontrada com ID: 999\",\n    \"path\": \"/transacoes/999\"\n}"
+						}
+					]
+				},
+				{
+					"name": "Deletar Transação - Sucesso",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "X-Session-Token",
+								"value": "{{sessionToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/transacoes/1",
+							"host": ["{{baseUrl}}"],
+							"path": ["transacoes", "1"]
+						}
+					},
+					"response": [
+						{
+							"name": "Transação Deletada",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/transacoes/1",
+									"host": ["{{baseUrl}}"],
+									"path": ["transacoes", "1"]
+								}
+							},
+							"status": "No Content",
+							"code": 204,
+							"_postman_previewlanguage": "json"
+						}
+					]
+				},
+				{
+					"name": "Deletar Transação - Não Encontrado",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "X-Session-Token",
+								"value": "{{sessionToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/transacoes/999",
+							"host": ["{{baseUrl}}"],
+							"path": ["transacoes", "999"]
+						}
+					},
+					"response": [
+						{
+							"name": "Erro - Não Encontrado",
+							"originalRequest": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/transacoes/999",
+									"host": ["{{baseUrl}}"],
+									"path": ["transacoes", "999"]
+								}
+							},
+							"status": "Not Found",
+							"code": 404,
+							"_postman_previewlanguage": "json",
+							"body": "{\n    \"timestamp\": \"2025-11-14T18:30:00\",\n    \"status\": 404,\n    \"error\": \"Not Found\",\n    \"message\": \"Transação não encontrada com ID: 999\",\n    \"path\": \"/transacoes/999\"\n}"
+						}
+					]
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "sessionToken",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
+
