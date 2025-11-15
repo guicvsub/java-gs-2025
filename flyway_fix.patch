@@ -1,0 +1,381 @@
+diff --git a/pom.xml b/pom.xml
+index ce99f2f..7825130 100644
+--- a/pom.xml
++++ b/pom.xml
+@@ -27,6 +27,10 @@
+     
+     <dependencies>
+         <!-- Spring Boot Web -->
++        <dependency>
++            <groupId>org.springframework.boot</groupId>
++            <artifactId>spring-boot-starter-webflux</artifactId>
++        </dependency>
+         <dependency>
+             <groupId>org.springframework.boot</groupId>
+             <artifactId>spring-boot-starter-web</artifactId>
+@@ -64,6 +68,12 @@
+             <optional>true</optional>
+         </dependency>
+         
++        <!-- Flyway Migration -->
++        <dependency>
++            <groupId>org.flywaydb</groupId>
++            <artifactId>flyway-core</artifactId>
++        </dependency>
++
+         <!-- Spring Boot Test -->
+         <dependency>
+             <groupId>org.springframework.boot</groupId>
+diff --git a/src/main/java/br/com/cashplus/service/RiscoFraudeService.java b/src/main/java/br/com/cashplus/service/RiscoFraudeService.java
+new file mode 100644
+index 0000000..7d70052
+--- /dev/null
++++ b/src/main/java/br/com/cashplus/service/RiscoFraudeService.java
+@@ -0,0 +1,89 @@
++package br.com.cashplus.service;
++
++import org.springframework.stereotype.Service;
++import org.springframework.web.reactive.function.client.WebClient;
++import reactor.core.publisher.Mono;
++
++import java.math.BigDecimal;
++
++@Service
++public class RiscoFraudeService {
++
++    private final WebClient webClient;
++    private static final String API_URL = "http://api.riscofraude.com/v1/consulta"; // URL fictícia
++
++    public RiscoFraudeService(WebClient.Builder webClientBuilder) {
++        this.webClient = webClientBuilder.baseUrl(API_URL).build();
++    }
++
++    /**
++     * Simula a consulta a uma API externa para determinar o risco de fraude.
++     * O método é síncrono para se integrar ao código existente, mas usa WebClient internamente.
++     * @param valor O valor da transação.
++     * @param tipoPagamento O tipo de pagamento.
++     * @return O nível de risco de fraude (BAIXO, MEDIO, ALTO).
++     */
++    public String consultarRisco(BigDecimal valor, String tipoPagamento) {
++        // Objeto de requisição fictício
++        RiscoRequest request = new RiscoRequest(valor, tipoPagamento);
++
++        // Simulação de chamada externa
++        // Na vida real, você faria uma chamada real para a API
++        // Exemplo:
++        // return webClient.post()
++        //         .bodyValue(request)
++        //         .retrieve()
++        //         .bodyToMono(RiscoResponse.class)
++        //         .map(RiscoResponse::getRisco)
++        //         .block(); // Usando block() para síncrono
++
++        // Para fins de demonstração e teste, vamos manter a lógica de simulação
++        // que estava no TransacaoService, mas encapsulada aqui para simular a chamada.
++        return calcularRiscoFraudeSimulado(valor, tipoPagamento);
++    }
++
++    private String calcularRiscoFraudeSimulado(BigDecimal valor, String tipoPagamento) {
++        if (tipoPagamento == null) {
++            return "MEDIO";
++        }
++
++        String tipo = tipoPagamento.toUpperCase();
++
++        if ("DINHEIRO".equals(tipo) || "PIX".equals(tipo)) {
++            return "BAIXO";
++        }
++
++        if ("CARTAO".equals(tipo)) {
++            BigDecimal cem = new BigDecimal("100");
++            BigDecimal quinhentos = new BigDecimal("500");
++            if (valor.compareTo(cem) < 0) {
++                return "BAIXO";
++            } else if (valor.compareTo(quinhentos) <= 0) {
++                return "MEDIO";
++            } else {
++                return "ALTO";
++            }
++        }
++
++        return "MEDIO";
++    }
++
++    // Classes auxiliares para simular a comunicação com a API
++    private static class RiscoRequest {
++        public BigDecimal valor;
++        public String tipoPagamento;
++
++        public RiscoRequest(BigDecimal valor, String tipoPagamento) {
++            this.valor = valor;
++            this.tipoPagamento = tipoPagamento;
++        }
++    }
++
++    private static class RiscoResponse {
++        private String risco;
++
++        public String getRisco() {
++            return risco;
++        }
++    }
++}
+diff --git a/src/main/java/br/com/cashplus/service/TransacaoService.java b/src/main/java/br/com/cashplus/service/TransacaoService.java
+index fa1c255..523e3be 100644
+--- a/src/main/java/br/com/cashplus/service/TransacaoService.java
++++ b/src/main/java/br/com/cashplus/service/TransacaoService.java
+@@ -5,6 +5,7 @@ import br.com.cashplus.exception.ResourceNotFoundException;
+ import br.com.cashplus.model.Transacao;
+ import br.com.cashplus.repository.TransacaoRepository;
+ import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.context.annotation.Lazy;
+ import org.springframework.stereotype.Service;
+ import org.springframework.transaction.annotation.Transactional;
+ 
+@@ -17,6 +18,10 @@ public class TransacaoService {
+     
+     @Autowired
+     private TransacaoRepository transacaoRepository;
++
++    @Autowired
++    @Lazy // Para evitar problemas de dependência circular, embora não seja estritamente necessário aqui
++    private RiscoFraudeService riscoFraudeService;
+     
+     @Transactional
+     public TransacaoDTO criar(TransacaoDTO dto) {
+@@ -24,8 +29,8 @@ public class TransacaoService {
+         transacao.setValor(dto.getValor());
+         transacao.setTipoPagamento(dto.getTipoPagamento().toUpperCase());
+         
+-        // Cálculo automático do risco de fraude (regra de negócio isolada)
+-        String riscoFraude = calcularRiscoFraude(dto.getValor(), dto.getTipoPagamento());
++        // Consulta o risco de fraude através do serviço externo (Critério 1)
++        String riscoFraude = riscoFraudeService.consultarRisco(dto.getValor(), dto.getTipoPagamento());
+         transacao.setRiscoFraude(riscoFraude);
+         
+         transacao = transacaoRepository.save(transacao);
+@@ -52,38 +57,7 @@ public class TransacaoService {
+         transacaoRepository.deleteById(id);
+     }
+     
+-    /**
+-     * Calcula o risco de fraude baseado em regras de negócio
+-     * Regras:
+-     * - DINHEIRO: sempre BAIXO
+-     * - PIX: sempre BAIXO
+-     * - CARTAO: BAIXO se valor < 100, MEDIO se 100-500, ALTO se > 500
+-     */
+-    private String calcularRiscoFraude(BigDecimal valor, String tipoPagamento) {
+-        if (tipoPagamento == null) {
+-            return "MEDIO";
+-        }
+-        
+-        String tipo = tipoPagamento.toUpperCase();
+-        
+-        if ("DINHEIRO".equals(tipo) || "PIX".equals(tipo)) {
+-            return "BAIXO";
+-        }
+-        
+-        if ("CARTAO".equals(tipo)) {
+-            BigDecimal cem = new BigDecimal("100");
+-            BigDecimal quinhentos = new BigDecimal("500");
+-            if (valor.compareTo(cem) < 0) {
+-                return "BAIXO";
+-            } else if (valor.compareTo(quinhentos) <= 0) {
+-                return "MEDIO";
+-            } else {
+-                return "ALTO";
+-            }
+-        }
+-        
+-        return "MEDIO";
+-    }
++
+     
+     private TransacaoDTO toDTO(Transacao transacao) {
+         TransacaoDTO dto = new TransacaoDTO();
+diff --git a/src/main/resources/application.properties b/src/main/resources/application.properties
+index 766265a..64dc16b 100644
+--- a/src/main/resources/application.properties
++++ b/src/main/resources/application.properties
+@@ -5,7 +5,11 @@ spring.datasource.password=root
+ spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+ 
+ # JPA/Hibernate Configuration
+-spring.jpa.hibernate.ddl-auto=update
++spring.jpa.hibernate.ddl-auto=none
++spring.flyway.enabled=true
++spring.flyway.url=${spring.datasource.url}
++spring.flyway.user=${spring.datasource.username}
++spring.flyway.password=${spring.datasource.password}
+ spring.jpa.show-sql=true
+ spring.jpa.properties.hibernate.format_sql=true
+ spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.MySQLDialect
+diff --git a/src/main/resources/db/migration/V1__Initial_Schema.sql b/src/main/resources/db/migration/V1__Initial_Schema.sql
+new file mode 100644
+index 0000000..185d405
+--- /dev/null
++++ b/src/main/resources/db/migration/V1__Initial_Schema.sql
+@@ -0,0 +1,16 @@
++-- V1__Initial_Schema.sql
++
++CREATE TABLE operadores (
++    id BIGINT AUTO_INCREMENT PRIMARY KEY,
++    nome VARCHAR(100) NOT NULL,
++    cpf VARCHAR(11) NOT NULL UNIQUE,
++    turno VARCHAR(10) NOT NULL
++);
++
++CREATE TABLE transacoes (
++    id BIGINT AUTO_INCREMENT PRIMARY KEY,
++    valor DECIMAL(10, 2) NOT NULL,
++    tipo_pagamento VARCHAR(50) NOT NULL,
++    risco_fraude VARCHAR(50) NOT NULL,
++    data_transacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
++);
+diff --git a/src/test/java/br/com/cashplus/controller/OperadorControllerTest.java b/src/test/java/br/com/cashplus/controller/OperadorControllerTest.java
+new file mode 100644
+index 0000000..936ee18
+--- /dev/null
++++ b/src/test/java/br/com/cashplus/controller/OperadorControllerTest.java
+@@ -0,0 +1,64 @@
++package br.com.cashplus.controller;
++
++import br.com.cashplus.dto.OperadorDTO;
++import br.com.cashplus.service.OperadorService;
++import com.fasterxml.jackson.databind.ObjectMapper;
++import org.junit.jupiter.api.DisplayName;
++import org.junit.jupiter.api.Test;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
++import org.springframework.boot.test.mock.mockito.MockBean;
++import org.springframework.http.MediaType;
++import org.springframework.test.web.servlet.MockMvc;
++
++import static org.mockito.ArgumentMatchers.any;
++import static org.mockito.Mockito.when;
++import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
++import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
++import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
++
++@WebMvcTest(OperadorController.class)
++class OperadorControllerTest {
++
++    @Autowired
++    private MockMvc mockMvc;
++
++    @Autowired
++    private ObjectMapper objectMapper;
++
++    @MockBean
++    private OperadorService operadorService;
++
++    @Test
++    @DisplayName("POST /operadores - Deve criar um operador e retornar 201 Created")
++    void criarOperador_DeveRetornar201_QuandoSucesso() throws Exception {
++        // Arrange
++        OperadorDTO requestDTO = new OperadorDTO(null, "Maria Teste", "987.654.321-00", "TARDE");
++        OperadorDTO responseDTO = new OperadorDTO(1L, "Maria Teste", "98765432100", "TARDE");
++
++        when(operadorService.criar(any(OperadorDTO.class))).thenReturn(responseDTO);
++
++        // Act & Assert
++        mockMvc.perform(post("/operadores")
++                        .contentType(MediaType.APPLICATION_JSON)
++                        .content(objectMapper.writeValueAsString(requestDTO)))
++                .andExpect(status().isCreated())
++                .andExpect(jsonPath("$.id").value(1L))
++                .andExpect(jsonPath("$.nome").value("Maria Teste"));
++    }
++
++    @Test
++    @DisplayName("POST /operadores - Deve retornar 400 Bad Request quando o nome for inválido")
++    void criarOperador_DeveRetornar400_QuandoNomeInvalido() throws Exception {
++        // Arrange
++        OperadorDTO requestDTO = new OperadorDTO(null, "Ma", "987.654.321-00", "TARDE"); // Nome muito curto
++
++        // Act & Assert
++        mockMvc.perform(post("/operadores")
++                        .contentType(MediaType.APPLICATION_JSON)
++                        .content(objectMapper.writeValueAsString(requestDTO)))
++                .andExpect(status().isBadRequest())
++                .andExpect(jsonPath("$.status").value(400))
++                .andExpect(jsonPath("$.errors[0]").value("nome: Nome deve ter no mínimo 3 caracteres"));
++    }
++}
+diff --git a/src/test/java/br/com/cashplus/service/OperadorServiceTest.java b/src/test/java/br/com/cashplus/service/OperadorServiceTest.java
+new file mode 100644
+index 0000000..6a56f09
+--- /dev/null
++++ b/src/test/java/br/com/cashplus/service/OperadorServiceTest.java
+@@ -0,0 +1,69 @@
++package br.com.cashplus.service;
++
++import br.com.cashplus.dto.OperadorDTO;
++import br.com.cashplus.exception.BusinessException;
++import br.com.cashplus.model.Operador;
++import br.com.cashplus.repository.OperadorRepository;
++import org.junit.jupiter.api.BeforeEach;
++import org.junit.jupiter.api.DisplayName;
++import org.junit.jupiter.api.Test;
++import org.junit.jupiter.api.extension.ExtendWith;
++import org.mockito.InjectMocks;
++import org.mockito.Mock;
++import org.mockito.junit.jupiter.MockitoExtension;
++
++import static org.junit.jupiter.api.Assertions.*;
++import static org.mockito.Mockito.*;
++
++@ExtendWith(MockitoExtension.class)
++class OperadorServiceTest {
++
++    @Mock
++    private OperadorRepository operadorRepository;
++
++    @InjectMocks
++    private OperadorService operadorService;
++
++    private OperadorDTO operadorDTO;
++    private Operador operador;
++
++    @BeforeEach
++    void setUp() {
++        operadorDTO = new OperadorDTO(null, "João da Silva", "123.456.789-00", "MANHA");
++        operador = new Operador(1L, "João da Silva", "12345678900", "MANHA");
++    }
++
++    @Test
++    @DisplayName("Deve criar um novo operador com sucesso")
++    void criar_DeveCriarOperadorComSucesso() {
++        // Arrange
++        when(operadorRepository.existsByCpf(anyString())).thenReturn(false);
++        when(operadorRepository.save(any(Operador.class))).thenReturn(operador);
++
++        // Act
++        OperadorDTO resultado = operadorService.criar(operadorDTO);
++
++        // Assert
++        assertNotNull(resultado);
++        assertEquals(1L, resultado.getId());
++        assertEquals("João da Silva", resultado.getNome());
++        verify(operadorRepository, times(1)).existsByCpf("12345678900");
++        verify(operadorRepository, times(1)).save(any(Operador.class));
++    }
++
++    @Test
++    @DisplayName("Deve lançar BusinessException ao tentar criar operador com CPF duplicado")
++    void criar_DeveLancarExcecao_QuandoCPFDuplicado() {
++        // Arrange
++        when(operadorRepository.existsByCpf(anyString())).thenReturn(true);
++
++        // Act & Assert
++        BusinessException exception = assertThrows(BusinessException.class, () -> {
++            operadorService.criar(operadorDTO);
++        });
++
++        assertEquals("CPF já cadastrado: 123.456.789-00", exception.getMessage());
++        verify(operadorRepository, times(1)).existsByCpf("12345678900");
++        verify(operadorRepository, never()).save(any(Operador.class));
++    }
++}

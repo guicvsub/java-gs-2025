@@ -1,47 +1,71 @@
 package br.com.cashplus.service;
 
-import br.com.cashplus.dto.TransacaoDTO;
+import br.com.cashplus.dto.request.TransacaoRequestDTO;
+import br.com.cashplus.dto.response.TransacaoResponseDTO;
 import br.com.cashplus.exception.ResourceNotFoundException;
+import br.com.cashplus.model.Operador;
 import br.com.cashplus.model.Transacao;
+import br.com.cashplus.model.enums.RiscoFraudeEnum;
+import br.com.cashplus.repository.OperadorRepository;
 import br.com.cashplus.repository.TransacaoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Serviço de aplicação para gerenciamento de Transações.
+ * Contém lógica de aplicação e orquestração.
+ */
 @Service
 public class TransacaoService {
     
     @Autowired
     private TransacaoRepository transacaoRepository;
     
+    @Autowired
+    private OperadorRepository operadorRepository;
+    
+    @Autowired
+    private RiscoFraudeService riscoFraudeService;
+    
     @Transactional
-    public TransacaoDTO criar(TransacaoDTO dto) {
+    public TransacaoResponseDTO criar(TransacaoRequestDTO requestDTO) {
         Transacao transacao = new Transacao();
-        transacao.setValor(dto.getValor());
-        transacao.setTipoPagamento(dto.getTipoPagamento().toUpperCase());
+        transacao.setValor(requestDTO.getValor());
+        transacao.setTipoPagamento(requestDTO.getTipoPagamento());
         
-        // Cálculo automático do risco de fraude (regra de negócio isolada)
-        String riscoFraude = calcularRiscoFraude(dto.getValor(), dto.getTipoPagamento());
+        // Consulta risco de fraude (pode usar API externa ou cálculo local)
+        RiscoFraudeEnum riscoFraude = riscoFraudeService.consultarRisco(
+                requestDTO.getValor(), 
+                requestDTO.getTipoPagamento()
+        );
         transacao.setRiscoFraude(riscoFraude);
         
+        // Associa operador se fornecido
+        if (requestDTO.getOperadorId() != null) {
+            Operador operador = operadorRepository.findById(requestDTO.getOperadorId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Operador não encontrado com ID: " + requestDTO.getOperadorId()));
+            transacao.setOperador(operador);
+        }
+        
         transacao = transacaoRepository.save(transacao);
-        return toDTO(transacao);
+        return toResponseDTO(transacao);
     }
     
-    public List<TransacaoDTO> listarTodas() {
+    public List<TransacaoResponseDTO> listarTodas() {
         return transacaoRepository.findAll().stream()
-                .map(this::toDTO)
+                .map(this::toResponseDTO)
                 .collect(Collectors.toList());
     }
     
-    public TransacaoDTO buscarPorId(Long id) {
+    public TransacaoResponseDTO buscarPorId(Long id) {
         Transacao transacao = transacaoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Transação não encontrada com ID: " + id));
-        return toDTO(transacao);
+        return toResponseDTO(transacao);
     }
     
     @Transactional
@@ -52,46 +76,25 @@ public class TransacaoService {
         transacaoRepository.deleteById(id);
     }
     
-    /**
-     * Calcula o risco de fraude baseado em regras de negócio
-     * Regras:
-     * - DINHEIRO: sempre BAIXO
-     * - PIX: sempre BAIXO
-     * - CARTAO: BAIXO se valor < 100, MEDIO se 100-500, ALTO se > 500
-     */
-    private String calcularRiscoFraude(BigDecimal valor, String tipoPagamento) {
-        if (tipoPagamento == null) {
-            return "MEDIO";
-        }
-        
-        String tipo = tipoPagamento.toUpperCase();
-        
-        if ("DINHEIRO".equals(tipo) || "PIX".equals(tipo)) {
-            return "BAIXO";
-        }
-        
-        if ("CARTAO".equals(tipo)) {
-            BigDecimal cem = new BigDecimal("100");
-            BigDecimal quinhentos = new BigDecimal("500");
-            if (valor.compareTo(cem) < 0) {
-                return "BAIXO";
-            } else if (valor.compareTo(quinhentos) <= 0) {
-                return "MEDIO";
-            } else {
-                return "ALTO";
-            }
-        }
-        
-        return "MEDIO";
-    }
-    
-    private TransacaoDTO toDTO(Transacao transacao) {
-        TransacaoDTO dto = new TransacaoDTO();
+    private TransacaoResponseDTO toResponseDTO(Transacao transacao) {
+        TransacaoResponseDTO dto = new TransacaoResponseDTO();
         dto.setId(transacao.getId());
         dto.setValor(transacao.getValor());
         dto.setTipoPagamento(transacao.getTipoPagamento());
+        dto.setTipoPagamentoDescricao(
+                transacao.getTipoPagamento() != null ? 
+                transacao.getTipoPagamento().getDescricao() : null);
         dto.setRiscoFraude(transacao.getRiscoFraude());
+        dto.setRiscoFraudeDescricao(
+                transacao.getRiscoFraude() != null ? 
+                transacao.getRiscoFraude().getDescricao() : null);
         dto.setDataTransacao(transacao.getDataTransacao());
+        
+        if (transacao.getOperador() != null) {
+            dto.setOperadorId(transacao.getOperador().getId());
+            dto.setOperadorNome(transacao.getOperador().getNome());
+        }
+        
         return dto;
     }
 }

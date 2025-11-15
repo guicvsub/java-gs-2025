@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 
@@ -101,6 +102,45 @@ public class GlobalExceptionHandler {
         );
         
         return new ResponseEntity<>(errorResponse, HttpStatus.UNAUTHORIZED);
+    }
+    
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponseDTO> handleTypeMismatch(
+            MethodArgumentTypeMismatchException ex, WebRequest request) {
+        
+        List<String> errors = new ArrayList<>();
+        errors.add("Parâmetro inválido: " + ex.getName() + " deve ser do tipo " + 
+                   (ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "válido"));
+        
+        ErrorResponseDTO errorResponse = new ErrorResponseDTO(
+            HttpStatus.BAD_REQUEST.value(),
+            "Bad Request",
+            errors,
+            request.getDescription(false).replace("uri=", "")
+        );
+        
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+    
+    @ExceptionHandler(org.springframework.validation.BindException.class)
+    public ResponseEntity<ErrorResponseDTO> handleBindException(
+            org.springframework.validation.BindException ex, WebRequest request) {
+        
+        List<String> errors = new ArrayList<>();
+        ex.getBindingResult().getAllErrors().forEach((error) -> {
+            String fieldName = ((org.springframework.validation.FieldError) error).getField();
+            String errorMessage = error.getDefaultMessage();
+            errors.add(fieldName + ": " + errorMessage);
+        });
+        
+        ErrorResponseDTO errorResponse = new ErrorResponseDTO(
+            HttpStatus.BAD_REQUEST.value(),
+            "Validation Error",
+            errors,
+            request.getDescription(false).replace("uri=", "")
+        );
+        
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
     
     @ExceptionHandler(Exception.class)

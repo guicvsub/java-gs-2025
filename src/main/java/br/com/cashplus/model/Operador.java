@@ -1,8 +1,10 @@
 package br.com.cashplus.model;
 
-import br.com.cashplus.validation.CPF;
+import br.com.cashplus.model.enums.TurnoEnum;
+import br.com.cashplus.model.valueobject.CPF;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -20,17 +22,31 @@ public class Operador {
     private Long id;
     
     @NotBlank(message = "Nome é obrigatório")
-    @Size(min = 3, message = "Nome deve ter no mínimo 3 caracteres")
+    @Size(min = 3, max = 100, message = "Nome deve ter entre 3 e 100 caracteres")
     @Column(nullable = false, length = 100)
     private String nome;
     
-    @NotBlank(message = "CPF é obrigatório")
-    @CPF(message = "CPF inválido")
+    @NotNull(message = "CPF é obrigatório")
     @Column(nullable = false, unique = true, length = 11)
-    private String cpf;
+    @Convert(converter = CPFConverter.class)
+    private CPF cpf;
     
-    @NotBlank(message = "Turno é obrigatório")
-    @Column(nullable = false, length = 10)
-    private String turno; // MANHA, TARDE, NOITE
+    @NotNull(message = "Turno é obrigatório")
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10, columnDefinition = "VARCHAR(10)")
+    private TurnoEnum turno;
+    
+    @Converter
+    public static class CPFConverter implements AttributeConverter<CPF, String> {
+        @Override
+        public String convertToDatabaseColumn(CPF cpf) {
+            return cpf != null ? cpf.getValor() : null;
+        }
+        
+        @Override
+        public CPF convertToEntityAttribute(String dbData) {
+            return dbData != null ? CPF.of(dbData) : null;
+        }
+    }
 }
 
