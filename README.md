@@ -2,23 +2,7 @@
 
 **Assistente de Atendimento Inteligente para Operadores de Caixa**
 
-Sistema inteligente que auxilia atendentes de caixa a trabalharem com mais rapidez, precisão e segurança, reduzindo erros de troco, detectando possíveis fraudes e acelerando o atendimento.
-
-## 📋 Índice
-
-- [Tecnologias](#tecnologias)
-- [Arquitetura](#arquitetura)
-- [Pré-requisitos](#pré-requisitos)
-- [Instalação](#instalação)
-- [Configuração do Banco de Dados](#configuração-do-banco-de-dados)
-- [Executando a Aplicação](#executando-a-aplicação)
-- [Estrutura do Projeto](#estrutura-do-projeto)
-- [Endpoints da API](#endpoints-da-api)
-- [Sistema de Sessão](#sistema-de-sessão)
-- [Validações](#validações)
-- [Tratamento de Erros](#tratamento-de-erros)
-- [Testes de Carga](#testes-de-carga)
-- [Padrões e Boas Práticas](#padrões-e-boas-práticas)
+Sistema que auxilia atendentes de caixa com gestão de operadores e transações, incluindo detecção de risco de fraude através de integração com APIs externas.
 
 ## 🛠️ Tecnologias
 
@@ -31,27 +15,13 @@ Sistema inteligente que auxilia atendentes de caixa a trabalharem com mais rapid
 - **Maven**
 - **Lombok**
 - **Bean Validation (Jakarta)**
-- **JUnit 5** (Testes)
 
 ## 🏗️ Arquitetura
 
-O projeto segue os princípios de **Arquitetura Limpa** e **Domain-Driven Design (DDD)**, com separação clara de responsabilidades:
-
-### Camadas da Aplicação
+O projeto segue **Arquitetura Limpa** e **Domain-Driven Design (DDD)**, com separação clara de responsabilidades:
 
 ```
-┌─────────────────────────────────────┐
-│      Controller Layer (REST)        │  ← Interface HTTP
-├─────────────────────────────────────┤
-│      Service Layer (Aplicação)      │  ← Lógica de aplicação
-├─────────────────────────────────────┤
-│      Repository Layer               │  ← Persistência
-├─────────────────────────────────────┤
-│      Model Layer (Domínio)          │  ← Entities, VOs, Enums
-│      - Entities                     │
-│      - Value Objects                │
-│      - Enums                        │
-└─────────────────────────────────────┘
+Controller → Service → Repository → Model
 ```
 
 ### Estrutura de Diretórios
@@ -60,7 +30,7 @@ O projeto segue os princípios de **Arquitetura Limpa** e **Domain-Driven Design
 src/main/java/br/com/cashplus/
 ├── controller/              # Controllers REST
 ├── service/                 # Serviços de aplicação
-│   └── RiscoFraudeService   # Consumo de API externa
+│   └── RiscoFraudeService   # Consumo de API externa com WebClient
 ├── repository/              # Repositórios JPA
 ├── model/                   # Camada de domínio
 │   ├── enums/              # Enums (TurnoEnum, TipoPagamentoEnum, RiscoFraudeEnum)
@@ -69,10 +39,8 @@ src/main/java/br/com/cashplus/
 │   ├── request/            # DTOs de entrada
 │   ├── response/           # DTOs de saída
 │   └── external/           # DTOs para APIs externas
-├── exception/               # Exceções customizadas
-├── validation/              # Validadores customizados
-├── config/                  # Configurações
-└── util/                    # Utilitários
+├── config/                  # Configurações (WebClientConfig)
+└── exception/               # Tratamento global de exceções
 ```
 
 ## 📦 Pré-requisitos
@@ -80,144 +48,32 @@ src/main/java/br/com/cashplus/
 - **Java 17** ou superior
 - **Maven 3.6+**
 - **MySQL 8.0+**
-- **Git** (opcional)
 
-## 🔧 Instalação
+## 🔧 Instalação e Execução
 
-### 1. Clonar o Repositório
+### 1. Configurar Banco de Dados
 
-```bash
-git clone <repository-url>
-cd CashPlusAssist-API/java-gs-2025
-```
-
-### 2. Configurar MySQL
-
-```bash
-# Acessar MySQL
-sudo mysql -u root -p
-
-# Criar banco de dados
-CREATE DATABASE cashplus CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-
-# Criar usuário (opcional)
-CREATE USER 'cashplus_user'@'localhost' IDENTIFIED BY 'senha_segura';
-GRANT ALL PRIVILEGES ON cashplus.* TO 'cashplus_user'@'localhost';
-FLUSH PRIVILEGES;
-EXIT;
-```
-
-### 3. Configurar Aplicação
-
-Edite o arquivo `src/main/resources/application.properties`:
+Configure o arquivo `src/main/resources/application.properties`:
 
 ```properties
-# Database Configuration
 spring.datasource.url=jdbc:mysql://localhost:3306/cashplus
-spring.datasource.username=root
-spring.datasource.password=root
+spring.datasource.username=seu_usuario
+spring.datasource.password=sua_senha
 ```
 
-## 🚀 Executando a Aplicação
+O Flyway criará automaticamente as tabelas na primeira execução.
 
-### Opção 1: Maven (Recomendado)
+### 2. Executar a Aplicação
 
 ```bash
-# Clean e rebuild (sem testes)
+# Clean e rebuild
 mvn clean install -DskipTests
 
-# Executar aplicação
+# Executar
 mvn spring-boot:run
 ```
 
-### Opção 2: Executar JAR
-
-```bash
-# Compilar
-mvn clean package -DskipTests
-
-# Executar
-java -jar target/CashPlusAssist-API-1.0.0.jar
-```
-
-### Opção 3: IDE
-
-Execute a classe `CashPlusAssistApiApplication.java` diretamente na sua IDE.
-
 A aplicação estará disponível em: **`http://localhost:8080`**
-
-## 📁 Estrutura do Projeto
-
-```
-CashPlusAssist-API/
-├── src/
-│   ├── main/
-│   │   ├── java/br/com/cashplus/
-│   │   │   ├── controller/          # REST Controllers
-│   │   │   │   ├── OperadorController.java
-│   │   │   │   ├── TransacaoController.java
-│   │   │   │   └── SessionController.java
-│   │   │   ├── service/             # Lógica de aplicação
-│   │   │   │   ├── OperadorService.java
-│   │   │   │   ├── TransacaoService.java
-│   │   │   │   └── RiscoFraudeService.java
-│   │   │   ├── repository/          # Persistência
-│   │   │   │   ├── OperadorRepository.java
-│   │   │   │   └── TransacaoRepository.java
-│   │   │   ├── model/               # Domínio
-│   │   │   │   ├── enums/
-│   │   │   │   │   ├── TurnoEnum.java
-│   │   │   │   │   ├── TipoPagamentoEnum.java
-│   │   │   │   │   └── RiscoFraudeEnum.java
-│   │   │   │   ├── valueobject/
-│   │   │   │   │   └── CPF.java
-│   │   │   │   ├── Operador.java
-│   │   │   │   └── Transacao.java
-│   │   │   ├── dto/                 # DTOs
-│   │   │   │   ├── request/
-│   │   │   │   │   ├── OperadorRequestDTO.java
-│   │   │   │   │   └── TransacaoRequestDTO.java
-│   │   │   │   ├── response/
-│   │   │   │   │   ├── OperadorResponseDTO.java
-│   │   │   │   │   └── TransacaoResponseDTO.java
-│   │   │   │   ├── external/
-│   │   │   │   │   ├── RiscoFraudeRequestDTO.java
-│   │   │   │   │   └── RiscoFraudeResponseDTO.java
-│   │   │   │   └── ErrorResponseDTO.java
-│   │   │   ├── exception/           # Exceções
-│   │   │   │   ├── GlobalExceptionHandler.java
-│   │   │   │   ├── ResourceNotFoundException.java
-│   │   │   │   ├── BusinessException.java
-│   │   │   │   ├── ValidationException.java
-│   │   │   │   └── SessionException.java
-│   │   │   ├── validation/          # Validadores
-│   │   │   │   ├── CPF.java
-│   │   │   │   ├── CPFValidator.java
-│   │   │   │   ├── EnumValue.java
-│   │   │   │   └── EnumValueValidator.java
-│   │   │   ├── config/              # Configurações
-│   │   │   │   ├── SessionConfig.java
-│   │   │   │   ├── SessionInterceptor.java
-│   │   │   │   └── WebClientConfig.java
-│   │   │   ├── util/
-│   │   │   │   └── SessionManager.java
-│   │   │   └── CashPlusAssistApiApplication.java
-│   │   └── resources/
-│   │       ├── application.properties
-│   │       ├── messages.properties
-│   │       └── db/migration/        # Migrações Flyway
-│   │           ├── V1__Initial_Schema.sql
-│   │           └── V2__Add_Operador_Id_To_Transacoes.sql
-│   └── test/
-│       └── java/                    # Testes unitários
-├── scripts-teste-carga/             # Scripts de teste de carga
-│   ├── jmeter/
-│   ├── k6/
-│   └── README.md
-├── pom.xml
-├── README.md
-└── REFATORACAO.md
-```
 
 ## 🌐 Endpoints da API
 
@@ -247,14 +103,6 @@ POST /sessao/validar
 Headers: X-Session-Token: {token}
 ```
 
-**Resposta (200 OK):**
-```json
-{
-  "status": "valid",
-  "message": "Sessão válida"
-}
-```
-
 ---
 
 ### 👤 Operadores
@@ -269,7 +117,7 @@ Headers:
 Body:
 {
   "nome": "João Silva",
-  "cpf": "123.456.789-09",
+  "cpf": "111.444.777-35",
   "turno": "MANHA"
 }
 ```
@@ -279,7 +127,7 @@ Body:
 {
   "id": 1,
   "nome": "João Silva",
-  "cpf": "123.456.789-09",
+  "cpf": "111.444.777-35",
   "turno": "MANHA",
   "turnoDescricao": "Manhã"
 }
@@ -289,19 +137,6 @@ Body:
 ```http
 GET /api/operadores
 Headers: X-Session-Token: {token}
-```
-
-**Resposta (200 OK):**
-```json
-[
-  {
-    "id": 1,
-    "nome": "João Silva",
-    "cpf": "123.456.789-09",
-    "turno": "MANHA",
-    "turnoDescricao": "Manhã"
-  }
-]
 ```
 
 #### Buscar Operador por ID
@@ -316,13 +151,6 @@ PUT /api/operadores/{id}
 Headers: 
   Content-Type: application/json
   X-Session-Token: {token}
-
-Body:
-{
-  "nome": "João Silva Santos",
-  "cpf": "123.456.789-09",
-  "turno": "TARDE"
-}
 ```
 
 #### Deletar Operador
@@ -330,8 +158,6 @@ Body:
 DELETE /api/operadores/{id}
 Headers: X-Session-Token: {token}
 ```
-
-**Resposta (204 No Content)**
 
 ---
 
@@ -367,12 +193,7 @@ Body:
 }
 ```
 
-> **Nota:** O campo `riscoFraude` é calculado automaticamente:
-> - **DINHEIRO** ou **PIX**: sempre `BAIXO`
-> - **CARTAO**: 
->   - `BAIXO` se valor < R$ 100
->   - `MEDIO` se valor entre R$ 100 e R$ 500
->   - `ALTO` se valor > R$ 500
+> **Nota:** O campo `riscoFraude` é calculado automaticamente através de integração com API externa (quando habilitada) ou por regra de negócio local.
 
 #### Listar Transações
 ```http
@@ -392,8 +213,6 @@ DELETE /api/transacoes/{id}
 Headers: X-Session-Token: {token}
 ```
 
-**Resposta (204 No Content)**
-
 ---
 
 ## 🔒 Sistema de Sessão
@@ -404,7 +223,7 @@ A API utiliza um sistema de sessão baseado em tokens:
 2. **Usar Token**: Inclua o header `X-Session-Token` em todas as requisições (exceto criação de sessão)
 3. **Validade**: Tokens expiram após 30 minutos de inatividade
 
-### Exemplo de Uso com cURL
+### Exemplo de Uso
 
 ```bash
 # 1. Criar sessão
@@ -414,6 +233,122 @@ TOKEN=$(curl -s -X POST "http://localhost:8080/sessao/criar?userId=user123" | jq
 curl -X GET "http://localhost:8080/api/operadores" \
   -H "X-Session-Token: $TOKEN"
 ```
+
+---
+
+## 🔌 Integração com API Externa
+
+O projeto implementa integração com APIs externas usando **WebClient** do Spring WebFlux para consumo de serviços REST.
+
+### RiscoFraudeService
+
+O serviço `RiscoFraudeService` consome uma API externa para cálculo de risco de fraude em transações:
+
+**Configuração** (`application.properties`):
+```properties
+app.risco-fraude.api.url=http://api.riscofraude.com/v1/consulta
+app.risco-fraude.api.enabled=true
+app.risco-fraude.api.timeout=5
+```
+
+**Características da Integração:**
+
+- ✅ **WebClient**: Cliente reativo para consumo de APIs REST
+- ✅ **Timeout Configurável**: 5 segundos (padrão)
+- ✅ **Retry Automático**: 2 tentativas com delay exponencial
+- ✅ **Fallback**: Cálculo local em caso de falha da API externa
+- ✅ **DTOs Específicos**: `RiscoFraudeRequestDTO` e `RiscoFraudeResponseDTO` para comunicação externa
+- ✅ **Tratamento de Erros**: Timeout, conexão e erros HTTP são tratados adequadamente
+
+**Fluxo de Funcionamento:**
+
+1. Ao criar uma transação, o sistema tenta consultar a API externa de risco de fraude
+2. Se a API estiver disponível e responder dentro do timeout, usa o resultado
+3. Se houver falha (timeout, erro de conexão, etc.), aplica fallback com cálculo local baseado em regras de negócio
+4. O resultado é armazenado na transação
+
+**Exemplo de Requisição Externa:**
+```json
+POST http://api.riscofraude.com/v1/consulta
+{
+  "valor": 150.50,
+  "tipoPagamento": "CARTAO"
+}
+```
+
+**Resposta:**
+```json
+{
+  "risco": "MEDIO"
+}
+```
+
+---
+
+## 🧪 Testes de Carga
+
+O projeto inclui scripts para testes de carga e performance da API.
+
+### Script Bash (Recomendado)
+
+Script simples que funciona sem instalação de ferramentas adicionais:
+
+```bash
+# Teste básico (10 usuários, 10 requisições cada)
+./scripts-teste-carga/bash/load-test.sh
+
+# Teste com mais carga
+CONCURRENT_USERS=20 REQUESTS_PER_USER=20 ./scripts-teste-carga/bash/load-test.sh
+
+# Teste com menos delay
+DELAY_BETWEEN_REQUESTS=0.1 ./scripts-teste-carga/bash/load-test.sh
+```
+
+**Variáveis de Ambiente:**
+- `BASE_URL`: URL da API (padrão: http://localhost:8080)
+- `CONCURRENT_USERS`: Número de usuários concorrentes (padrão: 10)
+- `REQUESTS_PER_USER`: Requisições por usuário (padrão: 10)
+- `DELAY_BETWEEN_REQUESTS`: Delay entre requisições em segundos (padrão: 0.5)
+
+**Exemplo de Resultado:**
+```
+==========================================
+  RESULTADOS DO TESTE
+==========================================
+Total de Requisições: 100
+Requisições Bem-sucedidas: 100 (100.00%)
+Requisições com Erro: 0 (0%)
+
+Tempo de Resposta:
+  Média: 0.015s
+  Mínimo: 0.009s
+  Máximo: 0.029s
+
+Throughput: 100.00 requisições/segundo
+
+Distribuição de Códigos HTTP:
+  201: 100
+==========================================
+✅ Teste concluído com sucesso!
+```
+
+### Outras Ferramentas
+
+O projeto também inclui scripts para:
+- **k6**: `scripts-teste-carga/k6/load-test.js`
+- **JMeter**: `scripts-teste-carga/jmeter/load-test.jmx`
+
+Para mais detalhes, consulte: [scripts-teste-carga/README.md](scripts-teste-carga/README.md)
+
+### Métricas Esperadas
+
+- **Taxa de Sucesso**: > 95%
+- **Tempo de Resposta Médio**: < 200ms
+- **P95 (Percentil 95)**: < 500ms
+- **Throughput**: > 50 requisições/segundo
+- **Taxa de Erro**: < 5%
+
+---
 
 ## ✅ Validações
 
@@ -429,10 +364,7 @@ curl -X GET "http://localhost:8080/api/operadores" \
 - **tipoPagamento**: Obrigatório, valores aceitos: `DINHEIRO`, `CARTAO`, `PIX`
 - **operadorId**: Opcional (Long positivo)
 
-### Validadores Customizados
-
-- **@CPF**: Valida CPF com algoritmo de dígitos verificadores
-- **@EnumValue**: Valida se o valor pertence a um enum específico
+---
 
 ## 🚨 Tratamento de Erros
 
@@ -461,23 +393,16 @@ A API retorna erros no seguinte formato padronizado:
 - **404 Not Found**: Recurso não encontrado
 - **500 Internal Server Error**: Erro interno do servidor
 
-## 🧪 Testes de Carga
+---
 
-O projeto inclui scripts para testes de carga e performance:
-
-- **JMeter**: `scripts-teste-carga/jmeter/load-test.jmx`
-- **k6**: `scripts-teste-carga/k6/load-test.js`
-
-Para mais informações, consulte: [scripts-teste-carga/README.md](scripts-teste-carga/README.md)
-
-## 📐 Padrões e Boas Práticas Implementadas
+## 📐 Padrões Implementados
 
 ### Arquitetura
 
 - ✅ **Separação de Camadas**: Controller → Service → Repository → Model
 - ✅ **DDD**: Entities, Value Objects, Enums
 - ✅ **RESTful**: Uso adequado de métodos HTTP
-- ✅ **Clean Code**: Código legível e manutenível
+- ✅ **DTOs Separados**: Request e Response DTOs
 
 ### Domain-Driven Design
 
@@ -486,16 +411,9 @@ Para mais informações, consulte: [scripts-teste-carga/README.md](scripts-teste
 - ✅ **Enums**: `TurnoEnum`, `TipoPagamentoEnum`, `RiscoFraudeEnum`
 - ✅ **Repositories**: Abstração de persistência
 
-### Segurança e Validação
-
-- ✅ **Validação de Entrada**: Todas as entradas são validadas
-- ✅ **Sistema de Sessão**: Tokens para autenticação
-- ✅ **Prevenção de Injeção**: Uso de JPA/Hibernate
-- ✅ **DTOs Separados**: Request e Response DTOs
-
 ### Integração com APIs Externas
 
-- ✅ **WebClient**: Consumo de APIs REST
+- ✅ **WebClient**: Consumo de APIs REST reativo
 - ✅ **Timeout Configurável**: 5 segundos (padrão)
 - ✅ **Retry Automático**: 2 tentativas com delay
 - ✅ **Fallback**: Cálculo local em caso de falha
@@ -508,88 +426,15 @@ Para mais informações, consulte: [scripts-teste-carga/README.md](scripts-teste
 - ✅ **Transações**: Uso de `@Transactional`
 - ✅ **Relacionamentos**: `Transacao` ↔ `Operador` (ManyToOne)
 
-## 📝 Exemplos de Requisições
-
-### Fluxo Completo: Criar Operador e Transação
-
-```bash
-# 1. Criar sessão
-TOKEN=$(curl -s -X POST "http://localhost:8080/sessao/criar?userId=operador1" | jq -r '.token')
-
-# 2. Criar operador
-curl -X POST "http://localhost:8080/api/operadores" \
-  -H "Content-Type: application/json" \
-  -H "X-Session-Token: $TOKEN" \
-  -d '{
-    "nome": "Maria Santos",
-    "cpf": "987.654.321-00",
-    "turno": "TARDE"
-  }'
-
-# 3. Criar transação associada ao operador
-curl -X POST "http://localhost:8080/api/transacoes" \
-  -H "Content-Type: application/json" \
-  -H "X-Session-Token: $TOKEN" \
-  -d '{
-    "valor": 250.00,
-    "tipoPagamento": "CARTAO",
-    "operadorId": 1
-  }'
-```
-
-## 🔍 Logs
-
-A aplicação gera logs detalhados:
-
-- **SQL Queries**: Todas as queries são logadas (modo DEBUG)
-- **Requisições HTTP**: Logs de requisições e respostas
-- **Erros**: Stack traces completos para debugging
-- **Flyway**: Logs de migrações aplicadas
-
-## 📚 Dependências Principais
-
-- `spring-boot-starter-web`: Framework web RESTful
-- `spring-boot-starter-webflux`: WebClient para APIs externas
-- `spring-boot-starter-validation`: Validações Bean Validation
-- `spring-boot-starter-data-jpa`: Persistência JPA/Hibernate
-- `flyway-core` / `flyway-mysql`: Versionamento de banco
-- `mysql-connector-j`: Driver MySQL
-- `lombok`: Redução de boilerplate
-- `spring-boot-starter-aop`: Suporte a AOP
-
-## 🎯 Funcionalidades Principais
-
-1. **Gerenciamento de Operadores**
-   - CRUD completo
-   - Validação de CPF
-   - Gestão de turnos
-
-2. **Gerenciamento de Transações**
-   - Criação de transações
-   - Cálculo automático de risco de fraude
-   - Associação com operadores
-
-3. **Sistema de Sessão**
-   - Autenticação via tokens
-   - Validação de sessão
-
-4. **API Externa de Risco de Fraude**
-   - Integração configurável
-   - Fallback automático
-   - Tratamento de erros e timeouts
+---
 
 ## 📖 Documentação Adicional
 
 - [REFATORACAO.md](REFATORACAO.md) - Detalhes das refatorações implementadas
-- [scripts-teste-carga/README.md](scripts-teste-carga/README.md) - Guia de testes de carga
+- [scripts-teste-carga/README.md](scripts-teste-carga/README.md) - Guia completo de testes de carga
+- [EXEMPLOS_CURL.md](EXEMPLOS_CURL.md) - Exemplos de uso com cURL
 
-## 🤝 Contribuindo
-
-1. Faça um fork do projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
-5. Abra um Pull Request
+---
 
 ## 📄 Licença
 
@@ -601,10 +446,7 @@ Este projeto é um exemplo educacional.
 - **Guilherme Santiago** – RM552321
 - **Gustavo Gouvêa Soares** – RM553842
 
-## 👨‍💻 Autor
-
-CashPlusAssist - Assistente de Atendimento Inteligente para Operadores de Caixa
-
 ---
 
-**Tecnologia que empodera o profissional, não o substitui.** 🚀
+**CashPlusAssist - Assistente de Atendimento Inteligente para Operadores de Caixa**
+
