@@ -1,3 +1,5 @@
+* Aviso: o nome mudou de "CashPlus Assist" para "Scanner Real"
+
 # CashPlusAssist-API
 
 **Assistente de Atendimento Inteligente para Operadores de Caixa**
@@ -15,6 +17,8 @@ Sistema que auxilia atendentes de caixa com gestão de operadores e transações
 - **Maven**
 - **Lombok**
 - **Bean Validation (Jakarta)**
+
+
 
 ## 🏗️ Arquitetura
 
